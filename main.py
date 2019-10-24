@@ -1,5 +1,7 @@
 import pygame
 import random
+import math
+
 # initialize the pygame
 pygame.init()
 
@@ -14,44 +16,68 @@ pygame.display.set_caption('Space Invaders')
 icon = pygame.image.load('spaceinvaders_icon.png')
 pygame.display.set_icon(icon)
 
-
 # Player
-playerimg= pygame.image.load('player.png')
+playerimg = pygame.image.load('player.png')
 playerx = 370
 playery = 480
 playerx_change = 0
 
 # enemy
-enemyimg= pygame.image.load('enemy1.png')
-enemyx = random.randint(0, 736)
-enemyy = random.randint(64, 150)
-enemyx_change = 4
-enemyy_change = 40
+enemyimg = []
+enemyx = []
+enemyy = []
+enemyx_change = []
+enemyy_change = []
+num_of_enemies = 6
 
+for i in range(num_of_enemies):
+    enemyimg.append(pygame.image.load('enemy1.png'))
+    enemyx.append(random.randint(0, 735))
+    enemyy.append(random.randint(64, 150))
+    enemyx_change.append(4)
+    enemyy_change.append(40)
 
-#bullet
+# bullet
 # ready mean you can see bullet
 # file means missile is moving
-missileimg= pygame.image.load('missile1.png')
+missileimg = pygame.image.load('missile1.png')
 missilex = 0
 missiley = 480
 missilex_change = 0
 missiley_change = 10
 missile_state = 'ready'
 
+score_value = 0
+font = pygame.font.Font('freesansbold.ttf', 32)
+textx = 10
+texty = 10
+
+
+def show_score(x, y):
+    score = font.render('Score: ' + str(score_value), True, (255, 255, 255))
+    screen.blit(score, (x, y))
+
 
 def player(x, y):
     screen.blit(playerimg, (x, y))
 
 
-def enemy(x, y):
-    screen.blit(enemyimg, (x, y))
+def enemy(x, y, i):
+    screen.blit(enemyimg[i], (x, y))
 
 
 def fire_missile(x, y):
     global missile_state
     missile_state = 'fire'
     screen.blit(missileimg, (x - 17, y + 10))
+
+
+def is_collision(enemyx, enemyy, missilex, missiley):
+    distance = math.sqrt((math.pow(enemyx - missilex, 2)) + (math.pow(enemyy - missiley, 2)))
+    if distance < 27:
+        return True
+    else:
+        return False
 
 
 # game loop. it closes the game
@@ -86,23 +112,35 @@ while running:
     elif playerx >= 736:
         playerx = 736
 
+    for i in range(num_of_enemies):
+        enemyx[i] += enemyx_change[i]
+        if enemyx[i] <= 0:
+            enemyx_change[i] = 4
+            enemyy[i] += enemyy_change[i]
+        elif enemyx[i] >= 736:
+            enemyx_change[i] = -4
+            enemyy[i] += enemyy_change[i]
 
-    enemyx += enemyx_change
-    if enemyx <= 0:
-        enemyx_change = 4
-        enemyy += enemyy_change
-    elif enemyx >= 736:
-        enemyx_change = -4
-        enemyy += enemyy_change
+        # collision
+        collision = is_collision(enemyx[i], enemyy[i], missilex, missiley)
+        if collision:
+            missiley = 480
+            missile_state = 'ready'
+            score_value += 1
+            enemyx[i] = random.randint(0, 735)
+            enemyy[i] = random.randint(64, 150)
+
+        enemy(enemyx[i], enemyy[i], i)
 
     # missile movement
     if missiley <= 0:
         missiley = 480
         missile_state = 'ready'
+
     if missile_state is 'fire':
         fire_missile(missilex, missiley)
         missiley -= missiley_change
 
     player(playerx, playery)
-    enemy(enemyx, enemyy)
+    show_score(textx, texty)
     pygame.display.update()
